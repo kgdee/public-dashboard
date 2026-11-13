@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Public Dashboard</title>
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <link href="vendor/bootstrap-icons-1.13.2/bootstrap-icons.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="css/utils.css" />
+    <link rel="stylesheet" href="css/main.css" />
+    <script src="vendor/firebasejs-10.10.0/firebase-app-compat.js" defer></script>
+    <script src="vendor/firebasejs-10.10.0/firebase-auth-compat.js" defer></script>
+    <script src="vendor/firebasejs-10.10.0/firebase-firestore-compat.js" defer></script>
+    <script src="js/constants.js" defer></script>
+    <script src="js/utils.js" defer></script>
+    <script src="js/db.js" defer></script>
+    <script src="js/main.js" defer></script>
+    <script src="js/toast.js" defer></script>
+    <script src="js/confirmModal.js" defer></script>
+    <script src="js/avatar.js" defer></script>
+  </head>
+  <body>
+    <div class="app container">
+      <!-- Navbar -->
+      <header class="navbar">
+        <div class="logo">Dashboard</div>
+
+        <div class="user-control"></div>
+      </header>
+
+      <main>
+        <div class="breadcrumb"></div>
+
+        <table class="data-table">
+          <caption>
+            Items
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">ID</th>
+              <th scope="col">Value</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>#1001</td>
+              <td>{}</td>
+            </tr>
+            <tr>
+              <td>#1002</td>
+              <td>{}</td>
+            </tr>
+            <tr>
+              <td>#1003</td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+      </main>
+
+      <!-- Confirm modal -->
+      <div class="confirm-modal modal hidden" onclick="ConfirmModal.cancel()">
+        <div class="modal-content" onclick="stopPropagation(event)">
+          <button class="close-btn" onclick="ConfirmModal.cancel()">
+            <i class="bi bi-x-lg"></i>
+          </button>
+          <div class="modal-title">Delete item</div>
+          <div class="msg">Are you sure you want to delete "item"</div>
+
+          <div class="modal-actions">
+            <button class="button" onclick="ConfirmModal.cancel()">Cancel</button>
+            <button class="button btn-danger" onclick="ConfirmModal.confirm()">Confirm</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="loading-overlay hidden">
+        <div class="spinner"></div>
+      </div>
+
+      <div class="toast hidden"></div>
+    </div>
+  </body>
+</html>

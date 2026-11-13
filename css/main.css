@@ -1,0 +1,193 @@
+body {
+  font-family: "Poppins", sans-serif;
+  background-color: var(--color-bg);
+  color: var(--color-text);
+}
+
+.app {
+  overflow-x: hidden;
+  overflow-y: auto;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100dvh;
+}
+
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+  padding: 10px;
+  overflow-y: auto;
+}
+
+@scope (.navbar) {
+  :scope {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+    padding: 10px 15px;
+    border-bottom: 1px solid var(--color-border);
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+  }
+
+  .logo img {
+    width: 32px;
+    height: 32px;
+    object-fit: contain;
+  }
+}
+
+@scope (.breadcrumb) {
+  :scope {
+    padding: 10px;
+    display: flex;
+    overflow-x: auto;
+  }
+
+  .item {
+    cursor: pointer;
+  }
+
+  .item + .item::before {
+    content: "/";
+    margin: 0 8px;
+  }
+
+  .item.active {
+    color: var(--color-primary);
+    font-weight: bold;
+  }
+}
+
+@scope (.data-table) {
+  :scope {
+    border-collapse: collapse;
+    width: 100%;
+    max-width: 800px;
+    overflow-x: auto;
+    text-align: left;
+    background-color: var(--color-surface);
+  }
+
+  caption,
+  th,
+  td {
+    padding: 10px;
+    text-align: left;
+  }
+
+  caption {
+    caption-side: top;
+    font-weight: bold;
+  }
+
+  thead {
+    background-color: var(--color-primary);
+  }
+
+  th {
+    font-weight: bold;
+    color: white;
+  }
+
+  td {
+    max-width: 200px;
+    border-bottom: 1px solid var(--color-border);
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  td.id-col {
+    cursor: pointer;
+  }
+
+  .actions {
+    display: flex;
+    gap: 10px;
+  }
+
+  .actions > * {
+    padding: 5px;
+    font-size: 1.1rem;
+    border-radius: 50%;
+    background-color: var(--color-info);
+    color: white;
+  }
+
+  .actions .delete-btn {
+    background-color: var(--color-danger);
+  }
+
+  .badge {
+    display: inline-block;
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 9999px;
+  }
+
+  .badge-success {
+    background-color: #d1fae5;
+    color: #065f46;
+  }
+
+  .badge-pending {
+    background-color: #fef3c7;
+    color: #92400e;
+  }
+}
+
+.oauth-btn {
+  color: var(--color-text);
+  background-color: var(--color-surface);
+}
+
+.oauth-btn img {
+  width: 32px;
+  aspect-ratio: 1;
+}
+
+@scope (.loading-overlay) {
+  :scope {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--color-overlay);
+  }
+
+  .spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid white;
+    border-top: 4px solid var(--color-primary);
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+  }
+
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+}
