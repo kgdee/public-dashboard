@@ -1,13 +1,12 @@
 const navbar = document.querySelector(".navbar");
-const breadcrumbs = document.querySelector(".breadcrumb");
-const dataTable = document.querySelector(".data-table");
+const breadcrumbs = document.querySelector(".breadcrumbs");
 const loadingOverlay = document.querySelector(".loading-overlay");
 
 let isLoading = false;
 
 let currentPath = [];
 
-let currentData = null;
+globalThis.currentData = null;
 
 document.addEventListener("DOMContentLoaded", async () => {
   Firebase.init();
@@ -48,17 +47,21 @@ async function withLoading(action, { shouldShow = true, isDisabled = false } = {
   }
 }
 
-function updateUI() {
-  navbar.querySelector(".user-control").innerHTML = currentAuthUser ? Avatar.createHTML() : `<button class="oauth-btn button" onclick="loginWithGoogle()"><img src="/assets/images/google.png" />Continue with Google</button>`;
-
-  renderBreadcrumbs();
-  renderDataTable();
-}
-
 async function loginWithGoogle() {
   await withLoading(async () => {
     await Firebase.loginWithGoogle();
   });
+}
+
+function updateUI() {
+  navbar.querySelector(".user-control").innerHTML = currentAuthUser ? Avatar.createHTML() : `<button class="oauth-btn button" onclick="loginWithGoogle()"><img src="assets/images/google.png" />Continue with Google</button>`;
+
+  renderBreadcrumbs();
+  DataManager.render();
+}
+
+function getPathString() {
+  return currentPath.map((item) => item.name).join("/");
 }
 
 function openFolder(folderId) {
@@ -75,6 +78,16 @@ function openFolder(folderId) {
   }
 
   loadData();
+}
+
+function openPrevFolder() {
+  const folderId = currentPath.at(-2).id;
+  openFolder(folderId);
+}
+
+function reloadFolder() {
+  const folderId = currentPath.at(-1).id;
+  openFolder(folderId);
 }
 
 async function deleteItem(itemId) {
@@ -96,7 +109,7 @@ function renderBreadcrumbs() {
 async function loadData() {
   const isCollection = currentPath.length % 2 !== 0;
 
-  const pathString = currentPath.map((item) => item.name).join("/");
+  const pathString = getPathString();
   if (isCollection) {
     currentData = await Firebase.getDocuments(pathString);
   } else {
@@ -111,60 +124,8 @@ async function loadData() {
   updateUI();
 }
 
-async function renderDataTable() {
-  if (!currentData || currentData.length <= 0) {
-    dataTable.innerHTML = `
-      <caption>
-        No data
-      </caption>
-    `;
-  } else if (Array.isArray(currentData)) {
-    dataTable.innerHTML = `
-      <caption>
-        Items
-      </caption>
-      <thead>
-        <tr>
-          <th>ID</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${currentData
-          .map(
-            (item) => `
-          <tr>
-            <td class="id-col" onclick="openFolder('${item.id}')">${item.id}</td>
-            <td>
-              <div class="actions">
-                <button class="open-btn" onclick="openFolder('${item.id}')"><i class="bi bi-folder2-open"></i></button>
-                <button class="delete-btn" onclick="deleteItem('${item.id}')"><i class="bi bi-trash"></i></button>
-              </div>
-            </td>
-          </tr>`,
-          )
-          .join("")}
-      </tbody>
-    `;
-  } else {
-    dataTable.innerHTML = `
-      <thead>
-        <tr>
-          <th>Property</th>
-          <th>Value</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${Object.entries(currentData)
-          .map(([key, value]) => `<tr><td><strong>${key}</strong></td><td>${value}</td></tr>`)
-          .join("")}
-      </tbody>
-    `;
-  }
-}
-
 function debug() {
-  openFolder(`social-media`);
+  console.log(DataManager.currentData);
 }
 
 const keyActions = {

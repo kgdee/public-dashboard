@@ -42,6 +42,7 @@ main {
     font-size: 1.1rem;
     font-weight: bold;
     cursor: pointer;
+    color: var(--color-primary);
   }
 
   .logo img {
@@ -51,7 +52,7 @@ main {
   }
 }
 
-@scope (.breadcrumb) {
+@scope (.breadcrumbs) {
   :scope {
     padding: 10px;
     display: flex;
@@ -62,59 +63,32 @@ main {
     cursor: pointer;
   }
 
+  .item:last-child {
+    color: var(--color-primary);
+  }
+
   .item + .item::before {
     content: "/";
     margin: 0 8px;
-  }
-
-  .item.active {
-    color: var(--color-primary);
-    font-weight: bold;
+    color: var(--color-text);
   }
 }
 
-@scope (.data-table) {
+@scope (.data-manager) {
   :scope {
-    border-collapse: collapse;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
     width: 100%;
     max-width: 800px;
+    margin: 0 auto;
     overflow-x: auto;
-    text-align: left;
-    background-color: var(--color-surface);
   }
 
-  caption,
-  th,
-  td {
-    padding: 10px;
-    text-align: left;
-  }
-
-  caption {
-    caption-side: top;
-    font-weight: bold;
-  }
-
-  thead {
-    background-color: var(--color-primary);
-  }
-
-  th {
-    font-weight: bold;
-    color: white;
-  }
-
-  td {
-    max-width: 200px;
-    border-bottom: 1px solid var(--color-border);
-
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  td.id-col {
-    cursor: pointer;
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
 
   .actions {
@@ -122,34 +96,92 @@ main {
     gap: 10px;
   }
 
-  .actions > * {
-    padding: 5px;
-    font-size: 1.1rem;
-    border-radius: 50%;
-    background-color: var(--color-info);
-    color: white;
+  .actions .save-btn {
+    background-color: var(--color-success);
   }
 
-  .actions .delete-btn {
-    background-color: var(--color-danger);
-  }
+  @scope (.data-table) {
+    :scope {
+      table-layout: fixed;
+      border-collapse: collapse;
+      width: 800px;
+      overflow-x: auto;
+      text-align: left;
+      background-color: var(--color-surface);
+    }
 
-  .badge {
-    display: inline-block;
-    padding: 4px 8px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    border-radius: 9999px;
-  }
+    th,
+    td {
+      height: 50px;
+      padding: 10px;
+      text-align: left;
+    }
 
-  .badge-success {
-    background-color: #d1fae5;
-    color: #065f46;
-  }
+    caption {
+      caption-side: top;
+      font-weight: bold;
+    }
 
-  .badge-pending {
-    background-color: #fef3c7;
-    color: #92400e;
+    thead {
+      background-color: var(--color-primary);
+    }
+
+    th {
+      font-weight: bold;
+      color: white;
+    }
+
+    td {
+      position: relative;
+      border-bottom: 1px solid var(--color-border);
+
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    td.id-col {
+      cursor: pointer;
+    }
+
+    td input {
+      position: absolute;
+      inset: 0;
+      background-color: var(--color-surface);
+      font-size: 1rem;
+      padding: 10px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .actions > * {
+      padding: 5px;
+      font-size: 1.1rem;
+      border-radius: 50%;
+      background-color: var(--color-info);
+      color: white;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      border-radius: 9999px;
+    }
+
+    .badge-success {
+      background-color: #d1fae5;
+      color: #065f46;
+    }
+
+    .badge-pending {
+      background-color: #fef3c7;
+      color: #92400e;
+    }
   }
 }
 
@@ -190,4 +222,26 @@ main {
       transform: rotate(360deg);
     }
   }
+}
+
+.toast {
+  pointer-events: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 10px;
+}
+
+.toast .item {
+  background-color: rgba(0, 0, 0, 0.5);
+  color: white;
+  padding: 12px 20px;
+  border-radius: 5px;
+  width: max-content;
+  max-width: 100%;
 }

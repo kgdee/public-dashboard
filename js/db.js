@@ -374,6 +374,32 @@ const Firebase = (() => {
     );
   }
 
+  async function setDocument(path, data) {
+    try {
+      const docRef = db.doc(path);
+
+      data.timestamp = firebase.firestore.FieldValue.serverTimestamp();
+
+      await docRef.set(data);
+
+      notify("Document updated successfully.");
+    } catch (error) {
+      handleError(error);
+    }
+  }
+
+  async function deleteDocument(path) {
+    try {
+      const docRef = db.doc(path);
+      await docRef.delete();
+
+      notify("Document deleted successfully.");
+      return true;
+    } catch (error) {
+      handleError(error);
+    }
+  }
+
   async function listCollections(documentPath) {
     try {
       const encodedPath = encodeURIComponent(documentPath);
@@ -535,6 +561,8 @@ const Firebase = (() => {
     getDocument,
     getDocuments,
     loadDocuments,
+    setDocument,
+    deleteDocument,
     listCollections,
     deleteItem,
     setPost,

@@ -150,3 +150,70 @@ function createElement(htmlText) {
   const element = doc.body.firstChild; // Extracts the parsed element
   return element;
 }
+
+const ObjectUtils = (() => {
+  function replaceKey(obj, index, newKey) {
+    const keys = Object.keys(obj);
+
+    // Validate index
+    if (index < 0 || index >= keys.length) {
+      throw new Error("Index out of bounds");
+    }
+
+    const result = {};
+
+    keys.forEach((key, i) => {
+      // If this is the target index, use the new key; otherwise, keep the old key
+      const currentKey = i === index ? newKey : key;
+      result[currentKey] = obj[key];
+    });
+
+    return result;
+  }
+
+  function replaceValue(obj, index, newValue) {
+    const entries = Object.entries(obj);
+
+    // Validate index
+    if (index < 0 || index >= entries.length) {
+      throw new Error("Index out of bounds");
+    }
+
+    const result = {};
+
+    entries.forEach(([key, value], i) => {
+      // If this is the target index, use the new value; otherwise, keep the original value
+      result[key] = i === index ? newValue : value;
+    });
+
+    return result;
+  }
+
+  return { replaceKey, replaceValue };
+})();
+
+function getTableData(element) {
+  const data = {};
+  const rows = element.querySelectorAll("tbody tr");
+
+  rows.forEach((row) => {
+    const inputs = row.querySelectorAll('input[type="text"]');
+    if (inputs.length >= 2) {
+      const key = inputs[0].value;
+      const rawValue = inputs[1].value;
+
+      let value;
+      try {
+        // Attempt to parse back JSON-stringified values (objects, arrays, numbers, booleans)
+        value = JSON.parse(rawValue);
+      } catch (e) {
+        // Fallback to the raw string if it is not valid JSON
+        value = rawValue;
+      }
+
+      data[key] = value;
+    }
+  });
+
+  return data;
+}
