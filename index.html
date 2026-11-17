@@ -11,14 +11,17 @@
     <script src="vendor/firebasejs-10.10.0/firebase-app-compat.js" defer></script>
     <script src="vendor/firebasejs-10.10.0/firebase-auth-compat.js" defer></script>
     <script src="vendor/firebasejs-10.10.0/firebase-firestore-compat.js" defer></script>
+    <script src="/vendor/supabase-js-2/supabase-js@2.js"></script>
     <script src="js/constants.js" defer></script>
     <script src="js/utils.js" defer></script>
     <script src="js/db.js" defer></script>
     <script src="js/main.js" defer></script>
     <script src="js/toast.js" defer></script>
-    <script src="js/confirmModal.js" defer></script>
+    <script src="js/confirm-modal.js" defer></script>
     <script src="js/avatar.js" defer></script>
-    <script src="js/dataManager.js" defer></script>
+    <script src="js/data-manager.js" defer></script>
+    <script src="js/value-modal.js" defer></script>
+    <script src="js/search-bar.js" defer></script>
   </head>
   <body>
     <div class="app container">
@@ -30,10 +33,42 @@
       </header>
 
       <main>
+        <div class="global-stats"></div>
+
         <div class="breadcrumbs"></div>
 
         <div class="data-manager"></div>
       </main>
+
+      <!-- Value modal -->
+      <div class="modal value-modal hidden" onclick="ValueModal.close()">
+        <div class="modal-content" onclick="stopPropagation(event)">
+          <button class="close-btn" onclick="ValueModal.close()">
+            <i class="bi bi-x-lg"></i>
+          </button>
+          <div class="modal-title">Fill value</div>
+
+          <div class="modal-body item-list">
+            <label class="item">
+              <i class="bi bi-file-earmark-plus"></i>Choose a file
+              <input type="file" onchange="ValueModal.inputFile(this.files[0])" hidden />
+            </label>
+            <button class="item" onclick="ValueModal.inputId()"><i class="bi bi-card-text"></i>Generate ID</button>
+            <button class="item" onclick="ValueModal.inputUsername()"><i class="bi bi-person-circle"></i>Random Username</button>
+            <button class="item" onclick="ValueModal.inputObject()"><i class="bi bi-braces"></i>Template object</button>
+          </div>
+
+          <div class="modal-actions hidden">
+            <button class="button">Create</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Search bar -->
+      <div class="search-bar hidden">
+        <input type="text" placeholder="Find..." oninput="SearchBar.search()" />
+        <button class="close-btn" onclick="SearchBar.toggle(false)"><i class="bi bi-x-lg"></i></button>
+      </div>
 
       <!-- Confirm modal -->
       <div class="confirm-modal modal hidden" onclick="ConfirmModal.cancel()">

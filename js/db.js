@@ -20,7 +20,7 @@ const Supabase = (() => {
 
   async function uploadFile(file, path) {
     try {
-      path = `${basePath}/${currentUser.id}${path}`;
+      path = `${basePath}/${path}`;
 
       const { data: uploadData, error: uploadError } = await supabase.storage.from(bucketName).upload(path, file, { upsert: true });
 
@@ -62,6 +62,16 @@ const Supabase = (() => {
     }
   }
 
+  function convertPublicUrl(publicUrl) {
+    // Construct the segment to split by based on the public URL structure
+    const marker = `/storage/v1/object/public/${bucketName}/`;
+    const urlParts = publicUrl.split(marker);
+
+    // Extract and decode the file path
+    const filePath = decodeURIComponent(urlParts[1]);
+    return filePath;
+  }
+
   return { init, uploadFile, deleteStorageItem };
 })();
 
@@ -71,12 +81,12 @@ const Firebase = (() => {
 
   // Your web app's Firebase configuration
   const firebaseConfig = {
-    apiKey: "AIzaSyDezBJ6jJPPNShWz2F1Dlr_g9YmiygpKAo",
-    authDomain: "global-203b0.firebaseapp.com",
-    projectId: "global-203b0",
-    storageBucket: "global-203b0.firebasestorage.app",
-    messagingSenderId: "517320930372",
-    appId: "1:517320930372:web:41b6fc0212fae647a37811",
+    apiKey: CONFIG.FIREBASE_API_KEY,
+    authDomain: CONFIG.FIREBASE_AUTH_DOMAIN,
+    projectId: CONFIG.FIREBASE_PROJECT_ID,
+    storageBucket: CONFIG.FIREBASE_STORAGE_BUCKET,
+    messagingSenderId: CONFIG.FIREBASE_MESSAGING_SENDER_ID,
+    appId: CONFIG.FIREBASE_APP_ID,
   };
 
   let app;
@@ -97,6 +107,11 @@ const Firebase = (() => {
     auth.onAuthStateChanged((user) => {
       globalThis.currentAuthUser = user;
       console.log("currentAuthUser:", currentAuthUser);
+
+      if (currentAuthUser) {
+        registerUser(currentAuthUser.uid);
+      }
+
       updateUI();
     });
   }
@@ -111,6 +126,16 @@ const Firebase = (() => {
     return true;
   }
 
+  async function getTotalDocuments(collectionPath) {
+    try {
+      const snapshot = await db.collection(collectionPath).get();
+
+      return snapshot.size;
+    } catch (error) {
+      handleError(error);
+    }
+  }
+
   function getUserName() {
     const user = currentUser;
     return user.name || user.displayName || user.email || "Anonymous User";
@@ -120,30 +145,26 @@ const Firebase = (() => {
     return currentUser.avatarUrl || currentUser.photoURL || null;
   }
 
-  async function syncCurrentUser() {
+  async function registerUser(userId) {
     try {
-      const userId = currentAuthUser.uid;
-      const userRef = collection("users").doc(userId);
+      const batch = db.batch();
+
+      // Create the user's document (can only happen once per UID)
+      const userRef = db.collection("users").doc(userId);
       const docSnap = await userRef.get();
+      if (docSnap.exists) return;
 
-      let userData = {
-        id: userId,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-      };
+      batch.set(userRef, { createdAt: new Date() });
 
-      if (docSnap.exists) {
-        const docData = docSnap.data();
-        userData = { ...userData, ...docData };
-      } else {
-        userData = {
-          ...userData,
-          name: currentAuthUser.displayName || generateUserName(userId),
-          email: currentAuthUser.email,
-        };
-      }
+      // Increment the counter by 1
+      const statsRef = db.collection("metadata").doc("userStats");
+      batch.update(statsRef, {
+        count: firebase.firestore.FieldValue.increment(1),
+      });
 
-      await userRef.set(userData, { merge: true });
-      currentUser = userData;
+      await batch.commit();
+
+      console.log("User registered successfully.");
     } catch (error) {
       handleError(error);
     }
@@ -323,13 +344,23 @@ const Firebase = (() => {
     }
   }
 
+  async function createDocument(documentPath) {
+    try {
+      await db.doc(documentPath).set({});
+
+      notify("Document created successfully.");
+    } catch (error) {
+      handleError(error);
+    }
+  }
+
   async function getDocument(path) {
     try {
       const docSnap = await db.doc(path).get();
 
       if (docSnap.exists) {
         const docData = docSnap.data();
-        const document = { id: docSnap.id, ...docData, path: docSnap.ref.path };
+        const document = { id: docSnap.id, ...docData };
 
         return document;
       }
@@ -363,7 +394,7 @@ const Firebase = (() => {
       (snapshot) => {
         let documents = [];
         snapshot.forEach((doc) => {
-          documents.push({ id: doc.id, ...doc.data(), path: doc.ref.path });
+          documents.push({ id: doc.id, ...doc.data() });
         });
 
         onLoaded(documents);
@@ -377,6 +408,34 @@ const Firebase = (() => {
   async function setDocument(path, data) {
     try {
       const docRef = db.doc(path);
+
+      data.timestamp = firebase.firestore.FieldValue.serverTimestamp();
+
+      await docRef.set(data);
+
+      notify("Document updated successfully.");
+    } catch (error) {
+      handleError(error);
+    }
+  }
+
+  async function setDocument(path, data) {
+    try {
+      const docRef = db.doc(path);
+
+      // Find and upload any property whose value is a File
+      const uploadPromises = Object.keys(data).map(async (key) => {
+        if (data[key] instanceof File) {
+          const userId = data.authorId || currentAuthUser.uid;
+          const path = `${userId}/posts/${docRef.id}/image.png`;
+          console.log("data[key]", data[key]);
+          data[key] = await Supabase.uploadFile(data[key], path);
+          console.log("data[key]", data[key]);
+        }
+      });
+
+      // Wait for all file uploads to complete
+      await Promise.all(uploadPromises);
 
       data.timestamp = firebase.firestore.FieldValue.serverTimestamp();
 
@@ -489,64 +548,26 @@ const Firebase = (() => {
     }
   }
 
-  async function setPost(id, data) {
-    try {
-      const { imageFile, ...postData } = data;
+  const Metadata = (() => {
+    async function getUserStats() {
+      try {
+        const docSnap = await db.doc("metadata/userStats").get();
 
-      if (imageFile) {
-        postData.imageUrl = await Supabase.uploadFile(imageFile, `/posts/${id}/image.png`);
+        const userStats = docSnap.exists ? docSnap.data() : null;
+        return userStats;
+      } catch (error) {
+        handleError(error);
       }
-
-      await collection("posts")
-        .doc(id)
-        .set(
-          {
-            ...postData,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-          },
-          { merge: true },
-        );
-
-      notify("Post updated successfully.");
-    } catch (error) {
-      handleError(error);
     }
-  }
 
-  async function deletePost(postId) {
-    try {
-      const postRef = collection("posts").doc(postId);
-      const batch = db.batch();
-
-      // Query and delete documents in root collections where postId matches
-      const [commentsQS, reactionsQS, sharesQS] = await Promise.all([
-        collection("comments").where("postId", "==", postId).get(),
-        collection("reactions").where("postId", "==", postId).get(),
-        collection("shares").where("postId", "==", postId).get(),
-      ]);
-
-      commentsQS.docs.forEach((doc) => batch.delete(doc.ref));
-      reactionsQS.docs.forEach((doc) => batch.delete(doc.ref));
-      sharesQS.docs.forEach((doc) => batch.delete(doc.ref));
-
-      // Delete the post document itself
-      batch.delete(postRef);
-
-      // Commit all deletions in a single batch
-      await batch.commit();
-
-      await Supabase.deleteStorageItem(`/posts/${postId}`);
-
-      notify("Post deleted successfully.");
-    } catch (error) {
-      handleError(error);
-    }
-  }
+    return { getUserStats };
+  })();
 
   return {
+    Metadata,
+    getTotalDocuments,
     auth,
     init,
-    syncCurrentUser,
     loginWithGoogle,
     signup,
     logout,
@@ -558,6 +579,7 @@ const Firebase = (() => {
     deleteUser,
     createPost,
     getPost,
+    createDocument,
     getDocument,
     getDocuments,
     loadDocuments,
@@ -565,7 +587,5 @@ const Firebase = (() => {
     deleteDocument,
     listCollections,
     deleteItem,
-    setPost,
-    deletePost,
   };
 })();

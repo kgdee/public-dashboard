@@ -24,6 +24,37 @@ main {
   overflow-y: auto;
 }
 
+@scope (.search-bar) {
+  :scope {
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 10px;
+    width: 500px;
+    max-width: calc(100% - 20px);
+    background-color: var(--color-surface);
+    color: var(--color-text);
+    padding: 10px;
+    border: 1px solid var(--color-border);
+    border-radius: 5px;
+  }
+
+  input {
+    flex: 1;
+    background-color: transparent;
+    border: none;
+    border-bottom: 1px solid var(--color-border);
+    color: var(--color-text);
+  }
+
+  button {
+    background-color: transparent;
+    color: var(--color-text);
+  }
+}
+
 @scope (.navbar) {
   :scope {
     display: flex;
@@ -52,6 +83,35 @@ main {
   }
 }
 
+@scope (.global-stats) {
+  :scope {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 10px;
+  }
+
+  .item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background-color: var(--color-surface);
+    padding: 20px;
+    border-radius: 8px;
+  }
+
+  .item .bi {
+    font-size: 3rem;
+  }
+
+  .item .value {
+    font-size: 2rem;
+  }
+
+  .item .label {
+    color: var(--color-text-muted);
+  }
+}
+
 @scope (.breadcrumbs) {
   :scope {
     padding: 10px;
@@ -60,6 +120,7 @@ main {
   }
 
   .item {
+    white-space: nowrap;
     cursor: pointer;
   }
 
@@ -221,6 +282,42 @@ main {
     100% {
       transform: rotate(360deg);
     }
+  }
+}
+
+@scope (.value-modal) {
+  .item-list {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .item-list .item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 10px;
+    padding: 10px;
+    background-color: transparent;
+    cursor: pointer;
+  }
+
+  .item-list .item {
+    border-top: 1px solid var(--color-border);
+  }
+
+  .item-list .item .bi {
+    font-size: 1.5rem;
+  }
+
+  .item-list .item::after {
+    content: "›";
+    position: absolute;
+    top: 50%;
+    right: 10px;
+    transform: translateY(-50%);
+    font-size: 1.2rem;
+    color: var(--color-text);
   }
 }
 

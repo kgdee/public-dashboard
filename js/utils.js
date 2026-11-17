@@ -217,3 +217,16 @@ function getTableData(element) {
 
   return data;
 }
+
+function isValidJSON(str) {
+  try {
+    JSON.parse(str);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
+function isString(value) {
+  return typeof value === "string";
+}

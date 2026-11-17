@@ -1,4 +1,5 @@
 const navbar = document.querySelector(".navbar");
+const globalStatsEl = document.querySelector(".global-stats");
 const breadcrumbs = document.querySelector(".breadcrumbs");
 const loadingOverlay = document.querySelector(".loading-overlay");
 
@@ -6,10 +7,14 @@ let isLoading = false;
 
 let currentPath = [];
 
+let globalStats = null;
+
 globalThis.currentData = null;
 
 document.addEventListener("DOMContentLoaded", async () => {
   Firebase.init();
+  Supabase.init();
+  await loadGlobalStats();
   await openFolder("projects");
 });
 
@@ -53,6 +58,19 @@ async function loginWithGoogle() {
   });
 }
 
+function generateUserName() {
+  return getRandomItem(USERNAMES);
+}
+
+async function loadGlobalStats() {
+  const userStats = await Firebase.Metadata.getUserStats();
+  const totalUsers = userStats.count;
+  const totalProjects = await Firebase.getTotalDocuments("projects");
+
+  globalStats = { totalUsers, totalProjects };
+  renderGlobalStatsEl();
+}
+
 function updateUI() {
   navbar.querySelector(".user-control").innerHTML = currentAuthUser ? Avatar.createHTML() : `<button class="oauth-btn button" onclick="loginWithGoogle()"><img src="assets/images/google.png" />Continue with Google</button>`;
 
@@ -62,6 +80,12 @@ function updateUI() {
 
 function getPathString() {
   return currentPath.map((item) => item.name).join("/");
+}
+
+function isCollection() {
+  const path = getPathString();
+  const segments = path.split("/").filter(Boolean);
+  return segments.length % 2 !== 0;
 }
 
 function openFolder(folderId) {
@@ -78,6 +102,7 @@ function openFolder(folderId) {
   }
 
   loadData();
+  SearchBar.toggle(false);
 }
 
 function openPrevFolder() {
@@ -96,10 +121,30 @@ async function deleteItem(itemId) {
 
   await withLoading(async () => {
     const item = currentData.find((item) => item.id === itemId);
-    await Firebase.deleteItem(item.path);
+    const path = isCollection() ? `${getPathString()}/${item.id}` : getPathString();
+    await Firebase.deleteItem(path);
 
     await loadData();
   });
+}
+
+function renderGlobalStatsEl() {
+  globalStatsEl.innerHTML = `
+    <div class="item">
+      <i class="bi bi-people"></i>
+      <div class="info">
+        <div class="value">${globalStats.totalUsers}</div>
+        <div class="label">Total users</div>
+      </div>
+    </div>
+    <div class="item">
+      <i class="bi bi-code-square"></i>
+      <div class="info">
+        <div class="value">${globalStats.totalProjects}</div>
+        <div class="label">Total projects</div>
+      </div>
+    </div>
+  `;
 }
 
 function renderBreadcrumbs() {
@@ -107,25 +152,26 @@ function renderBreadcrumbs() {
 }
 
 async function loadData() {
-  const isCollection = currentPath.length % 2 !== 0;
-
-  const pathString = getPathString();
-  if (isCollection) {
-    currentData = await Firebase.getDocuments(pathString);
-  } else {
-    const collections = await Firebase.listCollections(pathString);
-    if (collections.length > 0) {
-      currentData = collections;
+  await withLoading(async () => {
+    const pathString = getPathString();
+    if (isCollection()) {
+      currentData = await Firebase.getDocuments(pathString);
     } else {
-      currentData = await Firebase.getDocument(pathString);
+      const collections = await Firebase.listCollections(pathString);
+      if (collections.length > 0) {
+        currentData = collections;
+      } else {
+        currentData = await Firebase.getDocument(pathString);
+      }
     }
-  }
 
-  updateUI();
+    updateUI();
+  });
 }
 
-function debug() {
-  console.log(DataManager.currentData);
+async function debug() {
+  const userStats = await Firebase.Metadata.getUserStats();
+  console.log(userStats);
 }
 
 const keyActions = {
