@@ -214,6 +214,31 @@ const Firebase = (() => {
     }
   }
 
+  async function clearAuthUsers() {
+    try {
+      // Get the Firebase ID token (forces a refresh if expired)
+      const token = await currentAuthUser.getIdToken();
+      const apiUrl = "https://kgdee-firebase-functions.netlify.app/.netlify/functions/clear-auth-users";
+      const response = await fetch(apiUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to clear auth users.");
+      }
+
+      const result = await response.json();
+
+      notify("Auth users cleared successfully.");
+    } catch (error) {
+      handleError(error);
+    }
+  }
+
   async function getUser(userId) {
     try {
       const docSnap = await collection("users").doc(userId).get();
@@ -548,6 +573,19 @@ const Firebase = (() => {
     }
   }
 
+  async function getTotalAuthUsers() {
+    const apiUrl = "https://kgdee-firebase-functions.netlify.app/.netlify/functions/count-auth-users";
+    const response = await fetch(apiUrl);
+
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to get total auth users.");
+    }
+
+    const data = await response.json();
+
+    return data.totalUsers;
+  }
+
   const Metadata = (() => {
     async function getUserStats() {
       try {
@@ -571,6 +609,7 @@ const Firebase = (() => {
     loginWithGoogle,
     signup,
     logout,
+    clearAuthUsers,
     getUser,
     loadUser,
     loadCurrentUser,
@@ -587,5 +626,6 @@ const Firebase = (() => {
     deleteDocument,
     listCollections,
     deleteItem,
+    getTotalAuthUsers,
   };
 })();

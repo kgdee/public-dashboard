@@ -1,6 +1,7 @@
 const navbar = document.querySelector(".navbar");
 const globalStatsEl = document.querySelector(".global-stats");
 const breadcrumbs = document.querySelector(".breadcrumbs");
+const menuModal = document.querySelector(".menu-modal");
 const loadingOverlay = document.querySelector(".loading-overlay");
 
 let isLoading = false;
@@ -10,6 +11,11 @@ let currentPath = [];
 let globalStats = null;
 
 globalThis.currentData = null;
+
+let currentSettings = load("currentSettings", {
+  notifications: true,
+  darkTheme: false,
+});
 
 document.addEventListener("DOMContentLoaded", async () => {
   Firebase.init();
@@ -58,13 +64,23 @@ async function loginWithGoogle() {
   });
 }
 
+async function logout() {
+  await withLoading(async () => {
+    await Firebase.logout();
+  });
+}
+
+function getUserName(data) {
+  data = data || currentAuthUser;
+  return data.name || data.displayName || data.email || data.authorName || "Anonymous User";
+}
+
 function generateUserName() {
   return getRandomItem(USERNAMES);
 }
 
 async function loadGlobalStats() {
-  const userStats = await Firebase.Metadata.getUserStats();
-  const totalUsers = userStats.count;
+  const totalUsers = await Firebase.getTotalAuthUsers();
   const totalProjects = await Firebase.getTotalDocuments("projects");
 
   globalStats = { totalUsers, totalProjects };
@@ -72,7 +88,30 @@ async function loadGlobalStats() {
 }
 
 function updateUI() {
-  navbar.querySelector(".user-control").innerHTML = currentAuthUser ? Avatar.createHTML() : `<button class="oauth-btn button" onclick="loginWithGoogle()"><img src="assets/images/google.png" />Continue with Google</button>`;
+  document.body.classList.toggle("dark-theme", currentSettings.darkTheme);
+
+  navbar.querySelector(".user-control").innerHTML = currentAuthUser
+    ? `<div class="avatar self-avatar" onclick="toggleMenuModal()"></div>`
+    : `<button class="oauth-btn button" onclick="loginWithGoogle()"><img src="assets/images/google.png" />Continue with Google</button>`;
+
+  if (currentAuthUser) {
+    const avatarEls = document.querySelectorAll(".self-avatar");
+    avatarEls?.forEach((el) => (el.innerHTML = Avatar.createHTML(currentAuthUser, false)));
+
+    const usernameEls = document.querySelectorAll(".self-username");
+    usernameEls?.forEach((el) => (el.textContent = getUserName()));
+  }
+
+  const settingEls = document.querySelectorAll(`[data-setting-id]`);
+  settingEls.forEach((el) => {
+    const setting = currentSettings[el.dataset.settingId];
+
+    const checkbox = el.querySelector("input");
+    if (checkbox) checkbox.checked = setting;
+
+    const descEl = el.querySelector(".desc");
+    if (descEl) descEl.textContent = setting ? "Enabled" : "Disabled";
+  });
 
   renderBreadcrumbs();
   DataManager.render();
@@ -169,9 +208,19 @@ async function loadData() {
   });
 }
 
+function toggleMenuModal() {
+  menuModal.classList.toggle("hidden");
+}
+
+function toggleSetting(name, force) {
+  currentSettings[name] = force !== undefined ? force : !currentSettings[name];
+  save("currentSettings", currentSettings);
+  updateUI();
+}
+
 async function debug() {
-  const userStats = await Firebase.Metadata.getUserStats();
-  console.log(userStats);
+  const totalAuthUsers = await Firebase.getTotalAuthUsers();
+  console.log(totalAuthUsers);
 }
 
 const keyActions = {

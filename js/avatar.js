@@ -11,15 +11,17 @@ const Avatar = (() => {
     return letter;
   }
 
-  function createHTML(data, isOuter = true) {
+  function createInner(data) {
     data = data || currentAuthUser;
     const imageUrl = getImageUrl(data);
-
-    if (imageUrl) return `<img${isOuter ? ` class="avatar"` : ""} src="${imageUrl}">`;
-
     const letter = getFirstLetter(data);
-    return `<div${isOuter ? ` class="avatar"` : ""}>${letter}</div>`;
+
+    return imageUrl ? `<img src="${imageUrl}">` : `<div>${letter}</div>`;
   }
 
-  return { getImageUrl, getFirstLetter, createHTML };
+  function createHTML(data, isOuter = true) {
+    return `<div class="avatar">${createInner(data)}</div>`;
+  }
+
+  return { getImageUrl, getFirstLetter, createInner, createHTML };
 })();

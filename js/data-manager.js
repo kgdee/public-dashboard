@@ -32,6 +32,10 @@ const DataManager = (() => {
             </div>
           </div>
           <table class="data-table">
+            <colgroup>
+              <col style="width: 70%;">
+              <col style="width: auto;">
+            </colgroup>
             <thead>
               <tr>
                 <th>ID</th>
