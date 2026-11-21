@@ -95,33 +95,38 @@ const Firebase = (() => {
 
   let unsubscribe = { posts: null, users: null, user: null };
 
-  globalThis.currentAuthUser = null;
-
   // Initialize Firebase
-  function init() {
+  async function init(onAuthStateChanged) {
     app = firebase.initializeApp(firebaseConfig);
     db = firebase.firestore();
     auth = firebase.auth();
 
+    const customToken = urlParams.get("custom_token");
+    if (customToken) await signInWithCustomToken(customToken);
+
     // Listen for auth state changes
-    auth.onAuthStateChanged((user) => {
-      globalThis.currentAuthUser = user;
-      console.log("currentAuthUser:", currentAuthUser);
-
-      if (currentAuthUser) {
-        registerUser(currentAuthUser.uid);
-      }
-
-      updateUI();
-    });
+    auth.onAuthStateChanged(onAuthStateChanged);
   }
 
-  function collection(name) {
+  async function signInWithCustomToken(token) {
+    try {
+      await auth.signInWithCustomToken(token);
+
+      // Remove token from URL bar for security/cleanliness
+      const url = new URL(window.location.href);
+      url.searchParams.delete("custom_token");
+      window.history.replaceState({}, document.title, url.toString());
+    } catch (error) {
+      handleError(error);
+    }
+  }
+
+  function getCollection(name) {
     return db.collection(`projects/${PROJECT_NAME}/${name}`);
   }
 
   async function docExists(collectionName, id) {
-    const docSnap = await collection(collectionName).doc(id).get();
+    const docSnap = await getCollection(collectionName).doc(id).get();
     if (!docSnap.exists) return false;
     return true;
   }
@@ -145,66 +150,6 @@ const Firebase = (() => {
     return currentUser.avatarUrl || currentUser.photoURL || null;
   }
 
-  async function registerUser(userId) {
-    try {
-      const batch = db.batch();
-
-      // Create the user's document (can only happen once per UID)
-      const userRef = db.collection("users").doc(userId);
-      const docSnap = await userRef.get();
-      if (docSnap.exists) return;
-
-      batch.set(userRef, { createdAt: new Date() });
-
-      // Increment the counter by 1
-      const statsRef = db.collection("metadata").doc("userStats");
-      batch.update(statsRef, {
-        count: firebase.firestore.FieldValue.increment(1),
-      });
-
-      await batch.commit();
-
-      console.log("User registered successfully.");
-    } catch (error) {
-      handleError(error);
-    }
-  }
-
-  async function login(data) {
-    try {
-      const userCredential = await auth.signInWithEmailAndPassword(data.email, data.password);
-      notify("Logged in successfully.");
-      return userCredential.user;
-    } catch (error) {
-      handleError(error);
-    }
-  }
-
-  async function loginWithGoogle() {
-    try {
-      const provider = new firebase.auth.GoogleAuthProvider();
-      const userCredential = await auth.signInWithPopup(provider);
-
-      notify("Logged in successfully.");
-      return userCredential.user;
-    } catch (error) {
-      handleError(error);
-    }
-  }
-
-  async function signup(data) {
-    try {
-      const userCredential = await auth.createUserWithEmailAndPassword(data.email, data.password);
-      const user = userCredential.user;
-      await user.sendEmailVerification();
-
-      notify("Account created successfully.");
-      return user;
-    } catch (error) {
-      handleError(error);
-    }
-  }
-
   async function logout() {
     try {
       await auth.signOut();
@@ -212,6 +157,40 @@ const Firebase = (() => {
     } catch (error) {
       handleError(error);
     }
+  }
+
+  async function setAuthUserRole(targetUid, newRole) {
+    const idToken = await currentAuthUser.getIdToken();
+
+    const response = await fetch(`https://kgdee-firebase-functions.netlify.app/.netlify/functions/set-auth-user-role?target_uid=${targetUid}&new_role=${newRole}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${idToken}`,
+        "Content-Type": "application/json",
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(data.error || `Request failed with status ${response.status}`);
+    }
+
+    console.log("Auth user role set successfully.");
+    return data;
+  }
+
+  async function getTotalAuthUsers() {
+    const apiUrl = "https://kgdee-firebase-functions.netlify.app/.netlify/functions/count-auth-users";
+    const response = await fetch(apiUrl);
+
+    if (!response.ok) {
+      throw new Error(data.error || "Failed to get total auth users.");
+    }
+
+    const data = await response.json();
+
+    return data.totalUsers;
   }
 
   async function clearAuthUsers() {
@@ -234,136 +213,6 @@ const Firebase = (() => {
       const result = await response.json();
 
       notify("Auth users cleared successfully.");
-    } catch (error) {
-      handleError(error);
-    }
-  }
-
-  async function getUser(userId) {
-    try {
-      const docSnap = await collection("users").doc(userId).get();
-
-      if (docSnap.exists) {
-        const docData = docSnap.data();
-        const user = { id: docSnap.id, ...docData };
-
-        return user;
-      }
-
-      return null;
-    } catch (error) {
-      handleError(error);
-    }
-  }
-
-  function loadUser(userId, onLoaded) {
-    const userRef = collection("users").doc(userId);
-
-    if (unsubscribe[`user${userId}`]) unsubscribe[`user${userId}`]();
-    unsubscribe[`user${userId}`] = userRef.onSnapshot(
-      (snapshot) => {
-        if (snapshot.exists) {
-          const docData = snapshot.data();
-          const user = { id: snapshot.id, email: currentUser.email, ...docData };
-
-          onLoaded(user);
-        }
-      },
-      (error) => handleError(error),
-    );
-  }
-
-  function loadCurrentUser() {
-    const userId = currentUser.id;
-    const userRef = collection("users").doc(userId);
-
-    if (unsubscribe.currentUser) unsubscribe.currentUser();
-    unsubscribe.currentUser = userRef.onSnapshot(
-      (snapshot) => {
-        if (snapshot.exists) {
-          const docData = snapshot.data();
-          const user = { id: snapshot.id, email: currentUser.email, ...docData };
-
-          currentUser = user;
-          updateUI();
-        }
-      },
-      (error) => handleError(error),
-    );
-  }
-
-  function loadUsers(onLoaded) {
-    if (unsubscribe.users) unsubscribe.users();
-    unsubscribe.users = collection("users")
-      .orderBy("timestamp", "desc")
-      .limit(10)
-      .onSnapshot(
-        (snapshot) => {
-          const users = snapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          }));
-
-          onLoaded(users);
-        },
-        (error) => handleError(error),
-      );
-  }
-
-  async function setUser(userId, data) {
-    const userRef = collection("users").doc(userId);
-
-    let { avatarFile, bannerFile, ...userData } = data;
-
-    if (avatarFile) {
-      userData.avatarUrl = await Supabase.uploadFile(avatarFile, "/profile/avatar.png");
-    }
-    if (bannerFile) {
-      userData.bannerUrl = await Supabase.uploadFile(bannerFile, "/profile/banner.png");
-    }
-
-    try {
-      // 3. Save user data and avatar URL to Firebase Firestore
-      await userRef.set(
-        {
-          ...userData,
-          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-        },
-        { merge: true },
-      );
-
-      notify("User updated successfully.");
-    } catch (error) {
-      handleError(error);
-    }
-  }
-
-  async function deleteUser(userId) {
-    const userRef = collection("users").doc(userId);
-
-    try {
-      // Query and delete all data associated with this user
-      const postsQS = await collection("posts").where("authorId", "==", userId).get();
-
-      const batch = db.batch();
-
-      // Add all posts to the batch
-      postsQS.forEach((doc) => {
-        batch.delete(doc.ref);
-      });
-
-      // Add the user doc to the same batch
-      batch.delete(userRef);
-
-      // Commit all deletions together
-      await batch.commit();
-
-      // Delete the user from Firebase Authentication
-      await auth.currentUser.delete();
-
-      await Supabase.deleteStorageItem();
-
-      notify("User deleted successfully.");
     } catch (error) {
       handleError(error);
     }
@@ -529,95 +378,14 @@ const Firebase = (() => {
     }
   }
 
-  async function createPost(data) {
-    try {
-      const id = generateId();
-      const { imageFile, ...postData } = data;
-
-      let imageUrl = null;
-      if (imageFile) {
-        imageUrl = await Supabase.uploadFile(imageFile, `/posts/${id}/image.png`);
-      }
-
-      await collection("posts")
-        .doc(id)
-        .set({
-          authorId: currentUser.id,
-          authorName: getUserName(),
-          content: postData.content || "",
-          ...(imageUrl ? { imageUrl } : {}),
-          avatarUrl: getUserAvatarUrl(),
-          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-        });
-
-      notify("Post created successfully.");
-    } catch (error) {
-      handleError(error);
-    }
-  }
-
-  async function getPost(postId) {
-    try {
-      const docSnap = await collection("posts").doc(postId).get();
-
-      if (docSnap.exists) {
-        const docData = docSnap.data();
-        const post = { id: docSnap.id, ...docData };
-
-        return post;
-      }
-
-      return null;
-    } catch (error) {
-      handleError(error);
-    }
-  }
-
-  async function getTotalAuthUsers() {
-    const apiUrl = "https://kgdee-firebase-functions.netlify.app/.netlify/functions/count-auth-users";
-    const response = await fetch(apiUrl);
-
-    if (!response.ok) {
-      throw new Error(data.error || "Failed to get total auth users.");
-    }
-
-    const data = await response.json();
-
-    return data.totalUsers;
-  }
-
-  const Metadata = (() => {
-    async function getUserStats() {
-      try {
-        const docSnap = await db.doc("metadata/userStats").get();
-
-        const userStats = docSnap.exists ? docSnap.data() : null;
-        return userStats;
-      } catch (error) {
-        handleError(error);
-      }
-    }
-
-    return { getUserStats };
-  })();
-
   return {
-    Metadata,
-    getTotalDocuments,
-    auth,
     init,
-    loginWithGoogle,
-    signup,
+    auth,
     logout,
+    setAuthUserRole,
+    getTotalAuthUsers,
     clearAuthUsers,
-    getUser,
-    loadUser,
-    loadCurrentUser,
-    loadUsers,
-    setUser,
-    deleteUser,
-    createPost,
-    getPost,
+    getTotalDocuments,
     createDocument,
     getDocument,
     getDocuments,
@@ -626,6 +394,5 @@ const Firebase = (() => {
     deleteDocument,
     listCollections,
     deleteItem,
-    getTotalAuthUsers,
   };
 })();

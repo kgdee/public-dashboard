@@ -4,12 +4,15 @@ const breadcrumbs = document.querySelector(".breadcrumbs");
 const menuModal = document.querySelector(".menu-modal");
 const loadingOverlay = document.querySelector(".loading-overlay");
 
+const urlParams = new URLSearchParams(window.location.search);
+
 let isLoading = false;
 
 let currentPath = [];
 
 let globalStats = null;
 
+globalThis.currentAuthUser = null;
 globalThis.currentData = null;
 
 let currentSettings = load("currentSettings", {
@@ -18,11 +21,20 @@ let currentSettings = load("currentSettings", {
 });
 
 document.addEventListener("DOMContentLoaded", async () => {
-  Firebase.init();
+  loadingWithOverlay(true);
+  await Firebase.init(onAuthStateChanged);
   Supabase.init();
   await loadGlobalStats();
   await openFolder("projects");
 });
+
+function onAuthStateChanged(user) {
+  globalThis.currentAuthUser = user;
+  console.log("currentAuthUser", currentAuthUser);
+
+  updateUI();
+  loadingWithOverlay(false);
+}
 
 function notify(message) {
   console.log(message);
@@ -35,7 +47,7 @@ function loading(state = true) {
 
 function loadingWithOverlay(state = true) {
   isLoading = state;
-  LoadingOverlay.toggle(state);
+  loadingOverlay.classList.toggle("hidden", !isLoading);
 }
 
 async function withLoading(action, { shouldShow = true, isDisabled = false } = {}) {
@@ -58,15 +70,14 @@ async function withLoading(action, { shouldShow = true, isDisabled = false } = {
   }
 }
 
-async function loginWithGoogle() {
-  await withLoading(async () => {
-    await Firebase.loginWithGoogle();
-  });
+function login() {
+  window.location.href = `http://kgdee-auth-hub.netlify.app/pages/login/login.html?redirect=${encodeURIComponent(window.location.href)}`;
 }
 
 async function logout() {
   await withLoading(async () => {
     await Firebase.logout();
+    window.location.href = "/";
   });
 }
 
@@ -90,9 +101,7 @@ async function loadGlobalStats() {
 function updateUI() {
   document.body.classList.toggle("dark-theme", currentSettings.darkTheme);
 
-  navbar.querySelector(".user-control").innerHTML = currentAuthUser
-    ? `<div class="avatar self-avatar" onclick="toggleMenuModal()"></div>`
-    : `<button class="oauth-btn button" onclick="loginWithGoogle()"><img src="assets/images/google.png" />Continue with Google</button>`;
+  navbar.querySelector(".user-control").innerHTML = currentAuthUser ? `<div class="avatar self-avatar" onclick="toggleMenuModal()"></div>` : `<button class="button" onclick="login()">Login</button>`;
 
   if (currentAuthUser) {
     const avatarEls = document.querySelectorAll(".self-avatar");
