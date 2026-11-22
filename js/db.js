@@ -279,46 +279,73 @@ const Firebase = (() => {
     );
   }
 
-  async function setDocument(path, data) {
-    try {
-      const docRef = db.doc(path);
+  // async function setDocument(path, data) {
+  //   try {
+  //     const docRef = db.doc(path);
 
-      data.timestamp = firebase.firestore.FieldValue.serverTimestamp();
+  //     // Find and upload any property whose value is a File
+  //     const uploadPromises = Object.keys(data).map(async (key) => {
+  //       if (data[key] instanceof File) {
+  //         const userId = data.authorId || currentAuthUser.uid;
+  //         const path = `${userId}/posts/${docRef.id}/image.png`;
+  //         console.log("data[key]", data[key]);
+  //         data[key] = await Supabase.uploadFile(data[key], path);
+  //         console.log("data[key]", data[key]);
+  //       }
+  //     });
 
-      await docRef.set(data);
+  //     // Wait for all file uploads to complete
+  //     await Promise.all(uploadPromises);
 
-      notify("Document updated successfully.");
-    } catch (error) {
-      handleError(error);
+  //     data.timestamp = firebase.firestore.FieldValue.serverTimestamp();
+
+  //     await docRef.set(data);
+
+  //     notify("Document updated successfully.");
+  //   } catch (error) {
+  //     handleError(error);
+  //   }
+  // }
+
+  // Set document including its id and handle file uploads
+  async function setDocument(path, updates = {}) {
+    const oldDocRef = db.doc(path);
+    const currentId = oldDocRef.id;
+    const parentColRef = oldDocRef.parent;
+
+    const { id: newId, ...data } = updates;
+
+    // Find and upload any property whose value is a File
+    const uploadPromises = Object.keys(data).map(async (key) => {
+      if (data[key] instanceof File) {
+        const userId = data.authorId || currentAuthUser.uid;
+        const path = `${userId}/posts/${docRef.id}/image.png`;
+        data[key] = await Supabase.uploadFile(data[key], path);
+      }
+    });
+    // Wait for all file uploads to complete
+    await Promise.all(uploadPromises);
+
+    if (!newId || newId === currentId) {
+      // Same ID: standard update
+      await oldDocRef.set(data);
+    } else {
+      // Different ID: read existing doc -> write new doc -> delete old doc
+      const oldDocSnap = await oldDocRef.get();
+      const newDocRef = parentColRef.doc(newId);
+
+      const mergedData = {
+        ...oldDocSnap.data(),
+        ...data,
+      };
+
+      const batch = db.batch();
+      batch.set(newDocRef, mergedData);
+      batch.delete(oldDocRef);
+      await batch.commit();
     }
-  }
 
-  async function setDocument(path, data) {
-    try {
-      const docRef = db.doc(path);
-
-      // Find and upload any property whose value is a File
-      const uploadPromises = Object.keys(data).map(async (key) => {
-        if (data[key] instanceof File) {
-          const userId = data.authorId || currentAuthUser.uid;
-          const path = `${userId}/posts/${docRef.id}/image.png`;
-          console.log("data[key]", data[key]);
-          data[key] = await Supabase.uploadFile(data[key], path);
-          console.log("data[key]", data[key]);
-        }
-      });
-
-      // Wait for all file uploads to complete
-      await Promise.all(uploadPromises);
-
-      data.timestamp = firebase.firestore.FieldValue.serverTimestamp();
-
-      await docRef.set(data);
-
-      notify("Document updated successfully.");
-    } catch (error) {
-      handleError(error);
-    }
+    notify("Document set successfully.");
   }
 
   async function deleteDocument(path) {

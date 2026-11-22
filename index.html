@@ -62,9 +62,9 @@
                   <div class="arrow">›</div>
                 </label>
 
-                <label class="item">
-                  <i class="bi bi-question-circle"></i>
-                  <div class="info">Help & support</div>
+                <label class="item" onclick="toggleCodeModal()">
+                  <i class="bi bi-braces"></i>
+                  <div class="info">Format code</div>
                   <div class="arrow">›</div>
                 </label>
 
@@ -113,6 +113,24 @@
 
           <div class="modal-actions hidden">
             <button class="button">Create</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Code modal -->
+      <div class="modal code-modal hidden" onclick="toggleCodeModal()">
+        <div class="modal-content" onclick="stopPropagation(event)">
+          <button class="close-btn" onclick="toggleCodeModal()">
+            <i class="bi bi-x-lg"></i>
+          </button>
+          <div class="modal-title">Format code</div>
+
+          <div class="modal-body">
+            <textarea placeholder="Enter your code..."></textarea>
+          </div>
+
+          <div class="modal-actions">
+            <button class="button" onclick="formatCode()">Format</button>
           </div>
         </div>
       </div>

@@ -230,3 +230,18 @@ function isValidJSON(str) {
 function isString(value) {
   return typeof value === "string";
 }
+
+function getItemName(names, prefix = "item") {
+  const existingSet = new Set(names);
+
+  if (!existingSet.has(prefix)) {
+    return prefix;
+  }
+
+  let count = 2;
+  while (existingSet.has(`${prefix}_${count}`)) {
+    count++;
+  }
+
+  return `${prefix}_${count}`;
+}

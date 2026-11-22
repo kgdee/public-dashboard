@@ -2,6 +2,7 @@ const navbar = document.querySelector(".navbar");
 const globalStatsEl = document.querySelector(".global-stats");
 const breadcrumbs = document.querySelector(".breadcrumbs");
 const menuModal = document.querySelector(".menu-modal");
+const codeModal = document.querySelector(".code-modal");
 const loadingOverlay = document.querySelector(".loading-overlay");
 
 const urlParams = new URLSearchParams(window.location.search);
@@ -9,7 +10,8 @@ const urlParams = new URLSearchParams(window.location.search);
 let isLoading = false;
 
 let currentPath = [];
-
+let pathString = null;
+let isCollection = false;
 let globalStats = null;
 
 globalThis.currentAuthUser = null;
@@ -126,16 +128,6 @@ function updateUI() {
   DataManager.render();
 }
 
-function getPathString() {
-  return currentPath.map((item) => item.name).join("/");
-}
-
-function isCollection() {
-  const path = getPathString();
-  const segments = path.split("/").filter(Boolean);
-  return segments.length % 2 !== 0;
-}
-
 function openFolder(folderId) {
   const isListed = currentPath.some((item) => item.id === folderId);
   if (isListed) {
@@ -148,6 +140,10 @@ function openFolder(folderId) {
     };
     currentPath.push(folder);
   }
+
+  pathString = currentPath.map((item) => item.name).join("/");
+  const segments = pathString.split("/").filter(Boolean);
+  isCollection = segments.length % 2 !== 0;
 
   loadData();
   SearchBar.toggle(false);
@@ -169,7 +165,7 @@ async function deleteItem(itemId) {
 
   await withLoading(async () => {
     const item = currentData.find((item) => item.id === itemId);
-    const path = isCollection() ? `${getPathString()}/${item.id}` : getPathString();
+    const path = isCollection ? `${pathString}/${item.id}` : pathString
     await Firebase.deleteItem(path);
 
     await loadData();
@@ -201,8 +197,7 @@ function renderBreadcrumbs() {
 
 async function loadData() {
   await withLoading(async () => {
-    const pathString = getPathString();
-    if (isCollection()) {
+    if (isCollection) {
       currentData = await Firebase.getDocuments(pathString);
     } else {
       const collections = await Firebase.listCollections(pathString);
@@ -225,6 +220,16 @@ function toggleSetting(name, force) {
   currentSettings[name] = force !== undefined ? force : !currentSettings[name];
   save("currentSettings", currentSettings);
   updateUI();
+}
+
+async function formatCode() {
+  const code = codeModal.querySelector(".modal-body textarea").value;
+  await copyText(JSON.stringify(code));
+  notify("Formatted code copied to clipboard!");
+}
+
+function toggleCodeModal() {
+  codeModal.classList.toggle("hidden");
 }
 
 async function debug() {

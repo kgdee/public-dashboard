@@ -64,8 +64,14 @@ const DataManager = (() => {
     }
 
     async function addItem() {
+      const names = currentData.map((item) => item.id);
+      let itemName = isCollection ? "new-document" : "new-collection";
+      itemName = getItemName(names, itemName);
+      itemName = prompt("Enter item name", itemName);
+      if (!itemName) return;
+
       await withLoading(async () => {
-        const documentPath = `${getPathString()}/${isCollection() ? `newDocument` : `newCollection/newDocument`}`;
+        const documentPath = `${pathString}/${isCollection ? itemName : `${itemName}/new-document`}`;
         await Firebase.createDocument(documentPath);
         await loadData();
       });
@@ -103,11 +109,11 @@ const DataManager = (() => {
                 const isFile = value instanceof File;
                 const formattedValue = !isFile ? escapeHTML(JSON.stringify(value)) : `[File] ${value.name}`;
                 return `
-                  <tr${key === "id" ? ` style="pointer-events: none;"` : ""}>
+                  <tr>
                     <td><input type="text" value="${key}" onchange="DataManager.DocumentManager.replaceKey(${i}, this.value)"></td>
                     <td><input type="text" value="${formattedValue}" onchange="DataManager.DocumentManager.replaceValue(${i}, this.value)" style="${isFile ? `color: var(--color-info);` : ""}"></td>
                     <td>
-                      <div class="actions${key === "id" ? " hidden" : ""}">
+                      <div class="actions">
                         <button class="file-btn" onclick="ValueModal.open(${i})"><i class="bi bi-plus-lg"></i></button>
                         <button class="delete-btn" onclick="DataManager.DocumentManager.deleteProperty('${key}')"><i class="bi bi-x-lg"></i></button>
                       </div>
@@ -125,7 +131,9 @@ const DataManager = (() => {
     }
 
     function addProperty() {
-      currentData[`key_${generateId().slice(0, 4)}`] = null;
+      const names = Object.keys(currentData);
+      let keyName = getItemName(names, "new_key");
+      currentData[keyName] = null;
       render(currentData);
     }
 
@@ -136,11 +144,11 @@ const DataManager = (() => {
 
     async function save() {
       await withLoading(async () => {
-        const { path, ...documentData } = currentData;
-        await Firebase.setDocument(path, documentData);
+        await Firebase.setDocument(pathString, currentData);
       });
 
-      reloadFolder();
+      currentPath.pop();
+      openFolder(currentData.id);
     }
 
     function replaceKey(index, newKey) {
