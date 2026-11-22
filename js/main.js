@@ -146,7 +146,7 @@ function openFolder(folderId) {
   isCollection = segments.length % 2 !== 0;
 
   loadData();
-  SearchBar.toggle(false);
+  SearchBar.forceClose();
 }
 
 function openPrevFolder() {
@@ -160,16 +160,16 @@ function reloadFolder() {
 }
 
 async function deleteItem(itemId) {
-  const confirmed = await ConfirmModal.open(`Delete item?`, "This action cannot be undone.");
+  const confirmed = await ConfirmModal.open(`Delete item "${itemId}"?`, "This action cannot be undone.");
   if (!confirmed) return;
 
   await withLoading(async () => {
     const item = currentData.find((item) => item.id === itemId);
-    const path = isCollection ? `${pathString}/${item.id}` : pathString
+    const path = isCollection ? `${pathString}/${item.id}` : pathString;
     await Firebase.deleteItem(path);
-
-    await loadData();
   });
+
+  loadData();
 }
 
 function renderGlobalStatsEl() {
@@ -233,8 +233,7 @@ function toggleCodeModal() {
 }
 
 async function debug() {
-  const totalAuthUsers = await Firebase.getTotalAuthUsers();
-  console.log(totalAuthUsers);
+  console.log(currentData);
 }
 
 const keyActions = {

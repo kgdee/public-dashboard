@@ -25,5 +25,9 @@ const SearchBar = (() => {
     else DataManager.render();
   }
 
-  return { toggle, search };
+  function forceClose() {
+    element.classList.toggle("hidden", true);
+  }
+
+  return { toggle, search, forceClose };
 })();

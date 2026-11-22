@@ -24,7 +24,7 @@ const DataManager = (() => {
       element.innerHTML = `
         <div class="data-manager">
           <div class="header">
-            <div class="title">Items</div>
+            <div class="title">${isCollection ? "Documents" : "Collections"} in ${currentPath.at(-1).name}</div>
             <div class="actions">
               <button class="button" onclick="DataManager.ItemsManager.addItem()">Add item</button>
               <button class="button" onclick="loadData()"><i class="bi bi-arrow-clockwise"></i></button>
@@ -38,7 +38,7 @@ const DataManager = (() => {
             </colgroup>
             <thead>
               <tr>
-                <th>ID</th>
+                <th>Label</th>
                 <th>Actions</th>
               </tr>
             </thead>
@@ -47,7 +47,7 @@ const DataManager = (() => {
                 .map(
                   (item) => `
                 <tr>
-                  <td class="id-col" onclick="openFolder('${item.id}')">${item.id}</td>
+                  <td style="cursor: pointer;" onclick="openFolder('${item.id}')">${item.name || item.title || item.id}</td>
                   <td>
                     <div class="actions">
                       <button class="open-btn" onclick="openFolder('${item.id}')"><i class="bi bi-folder2-open"></i></button>
@@ -65,16 +65,17 @@ const DataManager = (() => {
 
     async function addItem() {
       const names = currentData.map((item) => item.id);
-      let itemName = isCollection ? "new-document" : "new-collection";
-      itemName = getItemName(names, itemName);
-      itemName = prompt("Enter item name", itemName);
-      if (!itemName) return;
+      let itemId = isCollection ? "new-document" : "new-collection";
+      itemId = getItemName(names, itemId);
+      itemId = prompt("Enter item name", itemId);
+      if (!itemId) return;
 
       await withLoading(async () => {
-        const documentPath = `${pathString}/${isCollection ? itemName : `${itemName}/new-document`}`;
+        const documentPath = `${pathString}/${isCollection ? itemId : `${itemId}/new-document`}`;
         await Firebase.createDocument(documentPath);
-        await loadData();
       });
+
+      openFolder(itemId);
     }
 
     return { render, addItem };

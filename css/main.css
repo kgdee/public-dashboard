@@ -296,10 +296,6 @@ main {
       text-overflow: ellipsis;
     }
 
-    td.id-col {
-      cursor: pointer;
-    }
-
     td input {
       position: absolute;
       inset: 0;
