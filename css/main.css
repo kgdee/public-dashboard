@@ -114,6 +114,7 @@ main {
 
 @scope (.breadcrumbs) {
   :scope {
+    flex-shrink: 0;
     padding: 10px;
     display: flex;
     overflow-x: auto;
@@ -184,7 +185,7 @@ main {
   }
 }
 
-@scope (.menu-modal) {
+@scope (.app > .menu-modal) {
   .modal-content {
     transform: none;
     top: 50px;
@@ -232,13 +233,17 @@ main {
 
 @scope (.data-manager) {
   :scope {
+    overflow-x: auto;
+  }
+}
+
+@scope (.items-manager, .document-manager) {
+  :scope {
     display: flex;
     flex-direction: column;
     gap: 10px;
-    width: 100%;
-    max-width: 800px;
+    width: 800px;
     margin: 0 auto;
-    overflow-x: auto;
   }
 
   .header {
@@ -260,7 +265,7 @@ main {
     :scope {
       table-layout: fixed;
       border-collapse: collapse;
-      width: 800px;
+      width: 100%;
       overflow-x: auto;
       text-align: left;
       background-color: var(--color-surface);
@@ -333,6 +338,23 @@ main {
     .badge-pending {
       background-color: #fef3c7;
       color: #92400e;
+    }
+  }
+
+  @scope (.menu-modal) {
+    .modal-content {
+      width: max-content;
+      padding: 15px;
+    }
+
+    .item-list {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+
+    .item-list > * {
+      cursor: pointer;
     }
   }
 }

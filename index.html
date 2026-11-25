@@ -20,6 +20,8 @@
     <script src="js/confirm-modal.js" defer></script>
     <script src="js/avatar.js" defer></script>
     <script src="js/data-manager.js" defer></script>
+    <script src="js/items-manager.js" defer></script>
+    <script src="js/document-manager.js" defer></script>
     <script src="js/value-modal.js" defer></script>
     <script src="js/search-bar.js" defer></script>
   </head>
@@ -37,7 +39,81 @@
 
         <div class="breadcrumbs"></div>
 
-        <div class="data-manager"></div>
+        <div>
+          <div class="data-manager">
+            <div class="items-manager hidden">
+              <div class="header">
+                <div class="title"></div>
+                <div class="actions">
+                  <button class="button" onclick="ItemsManager.toggleMenuModal()"><i class="bi bi-three-dots"></i></button>
+                </div>
+              </div>
+  
+              <table class="data-table">
+                <colgroup>
+                  <col style="width: 70%" />
+                  <col style="width: auto" />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th>Label</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+  
+              <div class="modal menu-modal hidden" onclick="ItemsManager.toggleMenuModal()">
+                <div class="modal-content" onclick="event.stopPropagation()">
+                  <div class="modal-body item-list">
+                    <div onclick="ItemsManager.addItem()"><i class="bi bi-plus-lg"></i> Add item</div>
+                    <div onclick="loadData()"><i class="bi bi-arrow-clockwise"></i> Refresh</div>
+                    <div onclick="SearchBar.toggle()"><i class="bi bi-search"></i> Search</div>
+                    <label>
+                      <i class="bi bi-box-arrow-in-down"></i> Import
+                      <input type="file" accept=".json" hidden onchange="ItemsManager.importItems(this.files[0])" />
+                    </label>
+                    <div onclick="ItemsManager.exportItems()"><i class="bi bi-box-arrow-up"></i> Export</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+  
+            <div class="document-manager hidden">
+              <div class="header">
+                <div class="title"></div>
+                <div class="actions">
+                  <button class="button" onclick="DocumentManager.toggleMenuModal()"><i class="bi bi-three-dots"></i></button>
+                </div>
+              </div>
+              <table class="data-table">
+                <colgroup>
+                  <col style="width: 20%" />
+                  <col style="width: 60%" />
+                  <col style="width: auto" />
+                </colgroup>
+                <thead>
+                  <tr>
+                    <th>Property</th>
+                    <th>Value</th>
+                    <th>Actions</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+  
+              <div class="modal menu-modal hidden" onclick="DocumentManager.toggleMenuModal()">
+                <div class="modal-content" onclick="event.stopPropagation()">
+                  <div class="modal-body item-list">
+                    <div class="hidden" data-item-id="save" onclick="DocumentManager.save()"><i class="bi bi-check-lg"></i> Save changes</div>
+                    <div onclick="DocumentManager.addProperty()"><i class="bi bi-plus-lg"></i> Add property</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="message">Loading...</div>
+          </div>
+        </div>
       </main>
 
       <!-- Menu modal -->

@@ -245,3 +245,32 @@ function getItemName(names, prefix = "item") {
 
   return `${prefix}_${count}`;
 }
+
+async function exportData(data) {
+  data = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    ...data,
+  };
+
+  const json = JSON.stringify(data, null, 2);
+
+  const blob = new Blob([json], {
+    type: "application/json",
+  });
+
+  const url = URL.createObjectURL(blob);
+  download(url, `${PROJECT_NAME}-export-${new Date().toISOString().slice(0, 10)}.json`);
+}
+
+async function importData(file) {
+  const text = await file.text();
+  const data = JSON.parse(text);
+
+  // Basic validation
+  if (!data || typeof data !== "object") {
+    throw new Error("Invalid backup file.");
+  }
+
+  return data;
+}

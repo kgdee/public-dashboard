@@ -218,9 +218,9 @@ const Firebase = (() => {
     }
   }
 
-  async function createDocument(documentPath) {
+  async function createDocument(documentPath, data = {}) {
     try {
-      await db.doc(documentPath).set({});
+      await db.doc(documentPath).set(data);
 
       notify("Document created successfully.");
     } catch (error) {

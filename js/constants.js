@@ -1,4 +1,4 @@
-const PROJECT_NAME = "html-starter"
+const PROJECT_NAME = "public-dashboard"
 
 const CONFIG = {
   FIREBASE_API_KEY: "AIzaSyDezBJ6jJPPNShWz2F1Dlr_g9YmiygpKAo",

@@ -1,7 +1,7 @@
 const navbar = document.querySelector(".navbar");
 const globalStatsEl = document.querySelector(".global-stats");
 const breadcrumbs = document.querySelector(".breadcrumbs");
-const menuModal = document.querySelector(".menu-modal");
+const menuModal = document.querySelector(".app > .menu-modal");
 const codeModal = document.querySelector(".code-modal");
 const loadingOverlay = document.querySelector(".loading-overlay");
 
@@ -125,7 +125,6 @@ function updateUI() {
   });
 
   renderBreadcrumbs();
-  DataManager.render();
 }
 
 function openFolder(folderId) {
@@ -208,6 +207,7 @@ async function loadData() {
       }
     }
 
+    DataManager.render();
     updateUI();
   });
 }
@@ -233,7 +233,7 @@ function toggleCodeModal() {
 }
 
 async function debug() {
-  console.log(currentData);
+
 }
 
 const keyActions = {
